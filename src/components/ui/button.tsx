@@ -8,9 +8,9 @@ const base =
   "disabled:cursor-not-allowed disabled:opacity-60";
 
 const variants: Record<ButtonVariant, string> = {
-  primary: "bg-brick text-card hover:bg-brick/90",
+  primary: "bg-forest text-card hover:bg-forest/90",
   secondary: "border border-border bg-card text-foreground hover:bg-border/40",
-  danger: "bg-foreground text-card hover:bg-foreground/90",
+  danger: "bg-brick text-card hover:bg-brick/90",
 };
 
 type ButtonProps = ComponentPropsWithoutRef<"button"> & { variant?: ButtonVariant };
