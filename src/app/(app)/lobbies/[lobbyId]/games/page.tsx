@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { ActiveGameCard } from "@/features/games/components/active-game-card";
+import { CompletedGameList } from "@/features/games/components/completed-game-list";
 import { CreateGameForm } from "@/features/games/components/create-game-form";
 import { getActiveGame } from "@/features/games/queries";
+import { getCompletedGames } from "@/features/games/queries-completed";
 import { getLobby, getLobbyRoster } from "@/features/lobbies/queries";
 import { requireUser } from "@/lib/auth/require-user";
 
@@ -15,7 +17,10 @@ export default async function LobbyGamesPage({ params }: { params: Promise<{ lob
   if (!lobby) notFound();
 
   const isHost = lobby.hostId === user.id;
-  const active = await getActiveGame(lobby.id);
+  const [active, completed] = await Promise.all([
+    getActiveGame(lobby.id),
+    getCompletedGames(lobby.id),
+  ]);
   const roster = isHost && !active ? await getLobbyRoster(lobby.id) : null;
 
   return (
@@ -43,13 +48,17 @@ export default async function LobbyGamesPage({ params }: { params: Promise<{ lob
       {!active && !isHost && (
         <Card>
           <h2 className="font-serif text-lg font-semibold">No game in progress</h2>
-          <p className="mt-1 text-muted">{lobby.hostUsername} can start a game whenever the group is ready.</p>
+          <p className="mt-1 text-muted">
+            {lobby.hostUsername} can start a game whenever the group is ready.
+          </p>
         </Card>
       )}
 
-      <Card>
-        <h2 className="font-serif text-lg font-semibold">Completed games</h2>
-        <p className="mt-1 text-muted">Finished games will be listed here once games can be closed out.</p>
+      <Card aria-labelledby="completed-heading">
+        <h2 id="completed-heading" className="mb-4 font-serif text-lg font-semibold">
+          Completed games ({completed.length})
+        </h2>
+        <CompletedGameList items={completed} lobbyId={lobby.id} />
       </Card>
     </div>
   );

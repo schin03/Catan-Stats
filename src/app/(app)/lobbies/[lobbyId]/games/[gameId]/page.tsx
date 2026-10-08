@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { ConfirmActionButton } from "@/components/ui/confirm-action-button";
 import { deleteGame } from "@/features/games/actions";
 import { DiceChart } from "@/features/games/components/dice-chart";
+import { FinishGameForm } from "@/features/games/components/finish-game-form";
 import { GameLiveSync } from "@/features/games/components/game-live-sync";
 import { ParticipantList } from "@/features/games/components/participant-list";
 import { RollEntryForm } from "@/features/games/components/roll-entry-form";
@@ -38,14 +39,21 @@ export default async function GamePage({ params }: { params: Promise<{ lobbyId: 
         <Link href={`/lobbies/${lobby.id}/games`} className="text-sm font-medium text-sea underline">
           ← Back to games
         </Link>
-        <GameLiveSync gameId={game.id} />
+        {isActive && <GameLiveSync gameId={game.id} />}
       </div>
 
       <Card aria-labelledby="game-heading">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-3">
             <h2 id="game-heading" className="font-serif text-xl font-semibold">
-              {isActive ? "Game in progress" : "Completed game"}
+              {isActive ? (
+                <>
+                  <span aria-hidden="true" className="mr-2 inline-block size-2.5 rounded-full bg-forest" />
+                  Game in progress
+                </>
+              ) : (
+                "Completed game"
+              )}
             </h2>
             <ParticipantList
               participants={game.participants}
@@ -63,16 +71,18 @@ export default async function GamePage({ params }: { params: Promise<{ lobbyId: 
         </div>
       </Card>
 
-      {isHost ? (
+      {isHost && isActive && (
         <Card aria-labelledby="record-heading">
           <h2 id="record-heading" className="mb-4 font-serif text-lg font-semibold">
             Record a roll
           </h2>
           <RollEntryForm lobbyId={lobby.id} gameId={game.id} nextRound={nextRound} />
         </Card>
-      ) : (
+      )}
+
+      {!isHost && isActive && (
         <p className="rounded-lg border border-dashed border-border p-4 text-muted">
-          You are viewing this game live. Only {lobby.hostUsername}, the host, can record or change rolls.
+          You are viewing this game live. Only {lobby.hostUsername} can record or change rolls.
         </p>
       )}
 
@@ -114,27 +124,32 @@ export default async function GamePage({ params }: { params: Promise<{ lobbyId: 
       </Card>
 
       {isHost && (
-        <Card aria-labelledby="delete-game-heading" className="border-brick/50">
-          <h2 id="delete-game-heading" className="mb-2 font-serif text-lg font-semibold">
-            Delete this game
+        <Card aria-labelledby="host-actions-heading" className="space-y-4">
+          <h2 id="host-actions-heading" className="font-serif text-lg font-semibold">
+            Host actions
           </h2>
-          <p className="mb-4 text-muted">
-            Permanently removes the game, its rolls, and its scores.
-            {isActive ? "" : " This will change the lobby statistics and leaderboard."}
-          </p>
-          <ConfirmActionButton
-            triggerLabel="Delete game"
-            triggerVariant="danger"
-            title="Delete this game?"
-            description={
-              isActive
-                ? "This permanently deletes the game in progress and all of its rolls. You can start a new game afterwards. This cannot be undone."
-                : "This permanently deletes the game, its rolls, and its scores. Lobby statistics and leaderboard results will change. This cannot be undone."
-            }
-            confirmLabel="Delete game forever"
-            action={deleteGame}
-            fields={{ lobbyId: lobby.id, gameId: game.id }}
-          />
+          <div className="flex flex-wrap gap-3">
+            <FinishGameForm
+              lobbyId={lobby.id}
+              gameId={game.id}
+              participants={game.participants}
+              status={game.status}
+              existingWinnerId={game.winnerId}
+            />
+            <ConfirmActionButton
+              triggerLabel="Delete game"
+              triggerVariant="danger"
+              title="Delete this game?"
+              description={
+                isActive
+                  ? "This permanently deletes the game in progress and all of its rolls. You can start a new game afterwards. This cannot be undone."
+                  : "This permanently deletes the game, its rolls, and its scores. Lobby statistics and leaderboard results will change. This cannot be undone."
+              }
+              confirmLabel="Delete game forever"
+              action={deleteGame}
+              fields={{ lobbyId: lobby.id, gameId: game.id }}
+            />
+          </div>
         </Card>
       )}
     </div>
