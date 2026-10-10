@@ -7,12 +7,16 @@ export type Participant = {
   score: number | null;
 };
 
+export const EVENT_DIE_VALUES = ["black", "yellow", "green", "grey"] as const;
+export type EventDie = typeof EVENT_DIE_VALUES[number];
+
 export type Roll = {
   id: string;
   round: number;
   red: number;
   yellow: number;
   total: number;
+  eventDie: EventDie | null;
 };
 
 export type Game = {
@@ -25,5 +29,4 @@ export type Game = {
 };
 
 export type GameDetail = Game & { participants: Participant[]; rolls: Roll[] };
-
 export type ActiveGameSummary = { game: Game; participants: Participant[]; rollCount: number };

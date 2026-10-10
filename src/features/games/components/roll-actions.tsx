@@ -8,14 +8,15 @@ import { FormMessage } from "@/components/ui/form-message";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { deleteRoll, updateRoll } from "@/features/games/actions";
 import { DicePicker } from "@/features/games/components/dice-picker";
-import type { Roll } from "@/features/games/types";
+import { EventDiePicker } from "@/features/games/components/event-die-picker";
+import type { EventDie, Roll } from "@/features/games/types";
 import { initialFormState, type FormState } from "@/lib/actions/form-state";
 
-/** Host-only edit and delete controls for one row of the roll history. */
 export function RollActions({ lobbyId, gameId, roll }: { lobbyId: string; gameId: string; roll: Roll }) {
   const [open, setOpen] = useState(false);
   const [red, setRed] = useState(roll.red);
   const [yellow, setYellow] = useState(roll.yellow);
+  const [event, setEvent] = useState<EventDie | null>(roll.eventDie);
 
   const [state, formAction] = useActionState(async (prev: FormState, formData: FormData) => {
     const result = await updateRoll(prev, formData);
@@ -24,9 +25,9 @@ export function RollActions({ lobbyId, gameId, roll }: { lobbyId: string; gameId
   }, initialFormState);
 
   function openEditor() {
-    // Always start from the current saved values (they may have changed since last time).
     setRed(roll.red);
     setYellow(roll.yellow);
+    setEvent(roll.eventDie);
     setOpen(true);
   }
 
@@ -48,11 +49,10 @@ export function RollActions({ lobbyId, gameId, roll }: { lobbyId: string; gameId
           <p className="text-lg" aria-live="polite">
             Total: <strong>{red + yellow}</strong>
           </p>
+          <EventDiePicker value={event} onChange={setEvent} />
           <FormMessage state={state} />
           <div className="flex flex-wrap justify-end gap-2">
-            <Button variant="secondary" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
+            <Button variant="secondary" onClick={() => setOpen(false)}>Cancel</Button>
             <SubmitButton pendingText="Saving…">Save changes</SubmitButton>
           </div>
         </form>

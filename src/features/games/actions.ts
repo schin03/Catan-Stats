@@ -10,9 +10,6 @@ import { createClient } from "@/lib/supabase/server";
 import { validateDiceInput } from "@/lib/validation/dice";
 import { isUuid } from "@/lib/validation/lobbies";
 
-// Every write goes through a database function that re-checks the caller is the lobby
-// host and re-validates the input. These actions are just a thin, friendly wrapper.
-
 const BAD_REQUEST: FormState = {
   status: "error",
   message: "Something went wrong. Please refresh the page and try again.",
@@ -32,7 +29,10 @@ export async function createGame(_prev: FormState, formData: FormData): Promise<
   if (playerIds.length < 2 || playerIds.length > 4) {
     return { status: "error", message: "Choose 2 to 4 players." };
   }
-  const players = playerIds.map((id) => ({ user_id: id, color: getString(formData, `color:${id}`) || null }));
+  const players = playerIds.map((id) => ({
+    user_id: id,
+    color: getString(formData, `color:${id}`) || null,
+  }));
 
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("create_game", { p_lobby_id: lobbyId, p_players: players });
@@ -49,11 +49,20 @@ export async function addRoll(_prev: FormState, formData: FormData): Promise<For
   const gameId = getUuid(formData, "gameId");
   if (!lobbyId || !gameId) return BAD_REQUEST;
 
-  const dice = validateDiceInput(getString(formData, "red"), getString(formData, "yellow"));
+  const dice = validateDiceInput(
+    getString(formData, "red"),
+    getString(formData, "yellow"),
+    getString(formData, "event"),
+  );
   if (!dice.ok) return { status: "error", message: dice.error };
 
   const supabase = await createClient();
-  const { error } = await supabase.rpc("add_roll", { p_game_id: gameId, p_red: dice.red, p_yellow: dice.yellow });
+  const { error } = await supabase.rpc("add_roll", {
+    p_game_id: gameId,
+    p_red: dice.red,
+    p_yellow: dice.yellow,
+    p_event: dice.eventDie,
+  });
   if (error) {
     console.error("add_roll failed:", error.message);
     return { status: "error", message: friendlyDbError(error.message) };
@@ -69,7 +78,11 @@ export async function updateRoll(_prev: FormState, formData: FormData): Promise<
   const rollId = getUuid(formData, "rollId");
   if (!lobbyId || !gameId || !rollId) return BAD_REQUEST;
 
-  const dice = validateDiceInput(getString(formData, "red"), getString(formData, "yellow"));
+  const dice = validateDiceInput(
+    getString(formData, "red"),
+    getString(formData, "yellow"),
+    getString(formData, "event"),
+  );
   if (!dice.ok) return { status: "error", message: dice.error };
 
   const supabase = await createClient();
@@ -77,6 +90,7 @@ export async function updateRoll(_prev: FormState, formData: FormData): Promise<
     p_roll_id: rollId,
     p_red: dice.red,
     p_yellow: dice.yellow,
+    p_event: dice.eventDie,
   });
   if (error) {
     console.error("update_roll failed:", error.message);
@@ -86,7 +100,6 @@ export async function updateRoll(_prev: FormState, formData: FormData): Promise<
   return OK;
 }
 
-/** Deletes a roll; the database function renumbers every later round. */
 export async function deleteRoll(_prev: FormState, formData: FormData): Promise<FormState> {
   await requireUser();
   const lobbyId = getUuid(formData, "lobbyId");

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isValidDie, parseDie, validateDiceInput } from "./dice";
+import { isValidDie, parseDie, parseEventDie, validateDiceInput } from "./dice";
 
 describe("isValidDie", () => {
   it("accepts integers 1 through 6", () => {
@@ -25,13 +25,36 @@ describe("parseDie", () => {
   });
 });
 
-describe("validateDiceInput", () => {
-  it("returns both values when valid, including 7 as a total of 3 + 4", () => {
-    expect(validateDiceInput("3", "4")).toEqual({ ok: true, red: 3, yellow: 4 });
+describe("parseEventDie", () => {
+  it("accepts the four valid faces", () => {
+    for (const face of ["black", "yellow", "green", "grey"]) {
+      expect(parseEventDie(face)).toBe(face);
+    }
   });
-  it("says which die is missing or invalid", () => {
-    expect(validateDiceInput("", "4")).toMatchObject({ ok: false, error: expect.stringMatching(/red/i) });
-    expect(validateDiceInput("3", "9")).toMatchObject({ ok: false, error: expect.stringMatching(/yellow/i) });
-    expect(validateDiceInput("", "")).toMatchObject({ ok: false, error: expect.stringMatching(/both/i) });
+  it("rejects other strings", () => {
+    expect(parseEventDie("")).toBeNull();
+    expect(parseEventDie("red")).toBeNull();
+    expect(parseEventDie("Black")).toBeNull();
+  });
+});
+
+describe("validateDiceInput", () => {
+  it("returns values when both dice are valid and event die is empty", () => {
+    expect(validateDiceInput("3", "4", "")).toEqual({
+      ok: true, red: 3, yellow: 4, eventDie: null,
+    });
+  });
+  it("returns eventDie when a valid event face is given", () => {
+    expect(validateDiceInput("2", "5", "black")).toEqual({
+      ok: true, red: 2, yellow: 5, eventDie: "black",
+    });
+  });
+  it("says which numeric die is missing or invalid", () => {
+    expect(validateDiceInput("", "4", "")).toMatchObject({ ok: false, error: expect.stringMatching(/red/i) });
+    expect(validateDiceInput("3", "9", "")).toMatchObject({ ok: false, error: expect.stringMatching(/yellow/i) });
+    expect(validateDiceInput("", "", "")).toMatchObject({ ok: false, error: expect.stringMatching(/both/i) });
+  });
+  it("rejects an invalid event die value", () => {
+    expect(validateDiceInput("3", "4", "purple")).toMatchObject({ ok: false });
   });
 });
